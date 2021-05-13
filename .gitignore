@@ -1,0 +1,19 @@
+.gitignore Template for Xcode3/4
+.DS_Store
+config.codekit
+# Other source repository archive directories (protects when importing)
+.idea/
+.codekit-cache/
+node_modules/
+coverage/
+CVS
+# automatic backup files
+*~.nib
+*.swp
+*~
+.node_modules/
+*(Autosaved).rtfd/
+Backup[ ]of[ ]*.pages/
+Backup[ ]of[ ]*.key/
+Backup[ ]of[ ]*.numbers/
+sauce_connect.log

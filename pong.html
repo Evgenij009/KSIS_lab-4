@@ -1,0 +1,314 @@
+<canvas id="canvas"></canvas>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let oppPos = 200,
+        pongData = undefined,
+        gamePaused = true,
+        pongx = 0,
+        pongy = 0,
+        playerId = 0;
+
+    App = {};
+    App.socket = io.connect();
+    App.updateDate = function(data) {
+        oppPos = data.oppXpos;
+        pongData = data.myPong;
+    }
+    App.socket.on('updateDate', App.updateDate);
+    App.socket.on('scoreUpdate', function(scoreData) {
+        score = scoreData.score;
+        oppscore = scoreData.oppscore;
+    });
+    App.socket.on('environment', function(data) {
+        console.log("environment : " + data.player.id + " : " + data.myPong.xmov + " : " + data.myPong.ymov);
+        pongx = data.myPong.xmov;
+        pongy = data.myPong.ymov;
+        myPong.xmov = pongx;
+        myPong.ymov = pongy;
+        playerId = data.player.id;
+    });
+    App.socket.on('startGame', function(data) {
+        if (data.playerId1 == playerId) {
+            playerId = 1;
+        }
+        if (data.playerId2 == playerId) {
+            playerId = 2;
+        }
+        console.log("startGame : " + playerId + " : " + data.playerId1 + " : " + data.playerId2);
+        gameTimer = setInterval(run, 10);
+        setTimeout((function() {
+            gamePaused = false;
+        }), 1000);
+    });
+    let canvas = document.getElementById('canvas');
+    canvas.width = 600;
+    canvas.height = 900;
+    let score = 0,
+        longpress = 0.9,
+        oppscore = 0,
+        gameTimer = 0,
+        moueDownVal = false,
+        ctx = canvas.getContext('2d'),
+        allSpriteArray = [],
+
+        mySprite = {
+            x: 160,
+            y: 480,
+            scale: {
+                x: 10.0,
+                y: 2.0
+            },
+            anchorpoint: {
+                x: -0.5,
+                y: 1.0
+            },
+            width: 10,
+            height: 10,
+            speed: 3.5,
+            color: '#c00'
+        },
+        oppSprite = {
+            x: oppPos,
+            y: 0,
+            scale: {
+                x: 10.0,
+                y: 2.0
+            },
+            anchorpoint: {
+                x: -0.5,
+                y: 0.0
+            },
+            width: 10,
+            height: 10,
+            speed: 3.5,
+            color: '#c00'
+        },
+        getRect = function(sprite) {
+            var anchorpoint = {
+                    x: 0.0,
+                    y: 0.0
+                },
+                scale = {
+                    x: 1.0,
+                    y: 1.0
+                };
+            if (sprite.scale !== undefined) {
+                scale = sprite.scale;
+            }
+            if (sprite.anchorpoint !== undefined) {
+                anchorpoint = sprite.anchorpoint;
+            }
+            var width = sprite.width * scale.x,
+                height = sprite.height * scale.y;
+            return {
+                x: sprite.x + (((width) * anchorpoint.x)),
+                y: sprite.y - (((height) * anchorpoint.y)),
+                width: width,
+                height: height
+            };
+        },
+        myPong = {
+            x: 160,
+            y: 240,
+            anchorpoint: {
+                x: -0.5,
+                y: 0.5
+            },
+            xmov: pongx,
+            ymov: pongy,
+            width: 20,
+            height: 20,
+            speed: 1.5,
+            color: '#c40AA',
+            intersects: function(otherObject) {
+                return !(getRect(otherObject).x > (getRect(this).x + getRect(this).width) || (getRect(otherObject).x + getRect(otherObject).width) < getRect(this).x || getRect(otherObject).y > (getRect(this).y + getRect(this).height) || (getRect(otherObject).y + getRect(otherObject).height) < getRect(this).y);
+            }
+        },
+        myBG = {
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            height: canvas.height,
+            color: '#ccc'
+        },
+        keysDown = {},
+        time = Date.now(),
+        createSprite = function(sprite) {
+            ctx.fillStyle = sprite.color;
+            ctx.fillRect(getRect(sprite).x, getRect(sprite).y, getRect(sprite).width, getRect(sprite).height);
+        },
+        groupSprite = function(parentSprite, sprite) {
+            ctx.fillStyle = sprite.color;
+            var scale = {
+                x: 1.0,
+                y: 1.0
+            };
+            if (sprite.scale !== undefined) {
+                scale = sprite.scale;
+            } else {
+                sprite.scale = {
+                    x: 1.0,
+                    y: 1.0
+                };
+            }
+            if (parentSprite.scale !== undefined) {
+                scale = {
+                    x: parentSprite.scale.x * sprite.scale.x,
+                    y: parentSprite.scale.y * sprite.scale.y
+                };
+            } else {
+                parentSprite.scale = {
+                    x: 1.0,
+                    y: 1.0
+                };
+            }
+            ctx.fillRect(parentSprite.x + sprite.x * scale.x, parentSprite.y + sprite.y * scale.y, sprite.width * scale.x, sprite.height * scale.y);
+        },
+        render = function() {
+            if (!gamePaused) {
+                var length = allSpriteArray.length,
+                    i = 0;
+                for (i = 0; i < length; i++) {
+                    createSprite(allSpriteArray[i]);
+                    if (allSpriteArray[i].groupSprite !== undefined) {
+                        for (var j = allSpriteArray[i].groupSprite.length - 1; j >= 0; j--) {
+                            groupSprite(allSpriteArray[i], allSpriteArray[i].groupSprite[j]);
+                        }
+                    }
+                }
+                ctx.font = "25px Arial";
+                ctx.fillText("Player1 : " + score + " : Player2 : " + oppscore, 10, 50);
+            } else {
+                ctx.font = "25px Arial";
+                ctx.fillText("GameOver Press spacebar or", 100, 50);
+                ctx.fillText("Mouse-click to restart", 100, 70);
+            }
+        },
+        moveRight = function() {
+            mySprite.x += mySprite.speed;
+        },
+        moveLeft = function() {
+            mySprite.x -= mySprite.speed;
+        },
+        movePong = function() {
+            if (!gamePaused) {
+                myPong.x += myPong.speed * myPong.xmov;
+                myPong.y += myPong.speed * myPong.ymov;
+            }
+        },
+        resetPong = function() {
+            myPong.y = 240;
+            myPong.x = 160;
+            myPong.xmov = ((Math.random() > 0.5) ? 1 : -1);
+            myPong.ymov *= -1;
+        },
+        update = function() {
+            if ((37 in keysDown)) {
+                moveLeft();
+            } else if ((39 in keysDown)) {
+                moveRight();
+            }
+            if (playerId == 2) {
+                if (pongData !== undefined) {
+                    myPong.x = pongData.x;
+                    myPong.y = canvas.height - pongData.y;
+                }
+            } else {
+                if (myPong.x + getRect(myPong).width / 2 > canvas.width || myPong.x < getRect(myPong).width / 2) {
+                    myPong.xmov *= -1;
+                }
+            }
+            if (myPong.intersects(mySprite) || myPong.intersects(oppSprite)) {
+                if (myPong.xmov) {
+                    myPong.xmov = 1;
+                } else {
+                    myPong.xmov = -1;
+                }
+                if (myPong.intersects(mySprite)) {
+                    myPong.xmov += -((myPong.x - mySprite.x) / 100);
+                    mySprite.color = '#fff';
+                    setTimeout((function() {
+                        mySprite.color = '#c00';
+                    }), 1000);
+                } else if (myPong.intersects(oppSprite)) {
+                    oppSprite.color = '#fff';
+                    myPong.xmov += -((myPong.x - oppSprite.x) / 100);
+                    setTimeout((function() {
+                        oppSprite.color = '#c00';
+                    }), 1000);
+                }
+                myPong.ymov *= -1;
+            }
+            if (myPong.y + getRect(myPong).height / 2 > canvas.height || myPong.y < getRect(myPong).height / 2) {
+                if (myPong.y + getRect(myPong).height / 2 > canvas.height) {
+                    score++;
+                } else {
+                    oppscore++;
+                }
+                resetPong();
+                App.socket.emit('scoreUpdate', {
+                    score: score,
+                    oppscore: oppscore
+                })
+            }
+            var data = {
+                oppXpos: mySprite.x,
+                myPong: {
+                    x: myPong.x,
+                    y: myPong.y
+                }
+            };
+            oppSprite.x = oppPos;
+            App.socket.emit('updateDate', data)
+        },
+        run = function() {
+            update();
+            render();
+            movePong();
+            time = Date.now();
+        },
+        initMyGame = function() {
+            allSpriteArray.push(myBG);
+            allSpriteArray.push(mySprite);
+            allSpriteArray.push(myPong);
+            allSpriteArray.push(oppSprite);
+            score = 0;
+        },
+        // gameOver = function() {
+        //     gamePaused = true;
+        //     allSpriteArray = [];
+        //     clearInterval(gameTimer);
+        // },
+        // removeFromArray = function(obj, arr) {
+        //     return arr.splice(arr.indexOf(obj), 1);
+        // },
+        mouseDown = function() {
+            if (gamePaused) {
+                gamePaused = false;
+                initMyGame();
+            } else {
+                moueDownVal = true;
+            }
+        },
+        mouseUp = function() {
+            longpress = 1.0;
+            moueDownVal = false;
+        };
+    window.addEventListener('touchend', mouseUp);
+    window.addEventListener('touchstart', mouseDown);
+    window.addEventListener('mousedown', mouseDown);
+    window.addEventListener('mouseup', mouseUp);
+    window.addEventListener('keydown', function(e) {
+        if (gamePaused && (e.keyCode === 32)) {
+            gamePaused = false;
+            initMyGame();
+        } else {
+            keysDown[e.keyCode] = true;
+        }
+    });
+    window.addEventListener('keyup', function(e) {
+        longpress = 1.0;
+        delete keysDown[e.keyCode];
+    });
+    initMyGame();
+</script>
