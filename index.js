@@ -1,8 +1,8 @@
 express = require('express.io')
 
 app = express().http().io()
-var totalConnection = 0;
 
+var totalConnection = 0;
 var state = {
     playerId1: 0,
     playerId2: 0,
@@ -30,6 +30,7 @@ app.io.sockets.on('connection', function(socket) {
 
     }
     var playerID = (state.playerId1 == socket.id) ? 1 : 2;
+
     socket.emit('environment', {
         myPong: {
             xmov: state.xmov,
@@ -39,9 +40,11 @@ app.io.sockets.on('connection', function(socket) {
             id: socket.id
         }
     });
+
     if (state.playerId2 && state.playerId1) {
         app.io.broadcast('startGame', state)
     }
+
     socket.on('disconnect', function() {
         totalConnection--;
         if (socket.id == state.playerId1) {
@@ -51,6 +54,7 @@ app.io.sockets.on('connection', function(socket) {
             state.playerId2 = 0;
         }
     });
+
 });
 
 // Send client html.
@@ -58,4 +62,4 @@ app.get('/', function(req, res) {
     res.sendfile(__dirname + '/pong.html')
 })
 
-app.listen(7076)
+app.listen(12345)

@@ -11,6 +11,7 @@ CVS
 *~.nib
 *.swp
 *~
+package-lock.json
 .node_modules/
 *(Autosaved).rtfd/
 Backup[ ]of[ ]*.pages/
