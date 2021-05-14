@@ -2,13 +2,22 @@ express = require('express.io')
 
 app = express().http().io()
 
-var totalConnection = 0;
-var state = {
+let totalConnection = 0;
+let state = {
     playerId1: 0,
     playerId2: 0,
     xmov: ((Math.random() > 0.5) ? 1 : -1),
     ymov: ((Math.random() > 0.5) ? 1 : -1)
 };
+
+//Ping
+// setInterval(function() {
+//     app.io.broadcast('timeServer', Date.now(), function(startTime) {
+//         let latency = Date.now() - startTime
+//         return latency
+//     })
+
+// }, 2000)
 
 app.io.route('updateDate', function(req) {
     req.io.broadcast('updateDate', req.data)
@@ -19,6 +28,11 @@ app.io.route('scoreUpdate', function(req) {
 })
 
 app.io.sockets.on('connection', function(socket) {
+
+    socket.on('latency', function(startTime, cb) {
+        cb(startTime)
+    })
+
     console.log("connected");
     totalConnection++;
     if (!state.playerId1) {
