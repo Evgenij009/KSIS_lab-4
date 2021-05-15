@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Pong</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
     <div style="font-size: 30px;">Ping: <span id="ping"></span> ms.</div><br>
     <canvas id="canvas"></canvas>
-    <script src="/socket.io/socket.io.js"></script>
+
     <script>
         let spanPing = document.getElementById('ping');
 
@@ -20,7 +21,7 @@
             pongy = 0,
             playerId = 0;
 
-        App = {};
+        let App = {};
         App.socket = io.connect();
         App.updateDate = function(data) {
             oppPos = data.oppXpos;
@@ -258,7 +259,7 @@
                     }
                 }
                 if (myPong.intersects(mySprite) || myPong.intersects(oppSprite)) {
-                    soundClick("event.wav")
+                    soundClick("click.mp3")
                     if (myPong.xmov) {
                         myPong.xmov = 1;
                     } else {
@@ -280,7 +281,7 @@
                     myPong.ymov *= -1;
                 }
                 if (myPong.y + getRect(myPong).height / 2 > canvas.height || myPong.y < getRect(myPong).height / 2) {
-                    soundClick("event.wav")
+                    soundClick("click.mp3")
                     if (myPong.y + getRect(myPong).height / 2 > canvas.height) {
                         score++;
                     } else {
@@ -317,14 +318,7 @@
                 allSpriteArray.push(oppSprite);
                 score = 0;
             },
-            // gameOver = function() {
-            //     gamePaused = true;
-            //     allSpriteArray = [];
-            //     clearInterval(gameTimer);
-            // },
-            // removeFromArray = function(obj, arr) {
-            //     return arr.splice(arr.indexOf(obj), 1);
-            // },
+
             mouseDown = function() {
                 if (gamePaused) {
                     gamePaused = false;
@@ -342,7 +336,6 @@
             let audio = new Audio();
             audio.src = pathAudio;
             audio.autoplay = true;
-            console.log("!")
         }
 
         window.addEventListener('touchend', mouseUp);

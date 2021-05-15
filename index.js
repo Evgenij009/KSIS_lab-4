@@ -10,14 +10,6 @@ let state = {
     ymov: ((Math.random() > 0.5) ? 1 : -1)
 };
 
-//Ping
-// setInterval(function() {
-//     app.io.broadcast('timeServer', Date.now(), function(startTime) {
-//         let latency = Date.now() - startTime
-//         return latency
-//     })
-
-// }, 2000)
 
 app.io.route('updateDate', function(req) {
     req.io.broadcast('updateDate', req.data)
@@ -70,6 +62,8 @@ app.io.sockets.on('connection', function(socket) {
     });
 
 });
+
+app.use(express.static(__dirname));
 
 // Send client html.
 app.get('/', function(req, res) {
